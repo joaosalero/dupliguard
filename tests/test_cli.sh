@@ -17,3 +17,27 @@ assert data["summary"]["redundantFiles"] == 1, data
 assert len(data["groups"][0]["files"]) == 2, data
 print("CLI integration: OK")
 PY
+
+# Report creation must never overwrite an input or an existing report.
+cp "$fixture/a/original.txt" "$fixture/expected.txt"
+if "$binary" scan "$fixture" --output "$fixture/a/original.txt"; then
+  printf 'Existing output unexpectedly accepted\n' >&2
+  exit 1
+fi
+cmp "$fixture/expected.txt" "$fixture/a/original.txt"
+ln -s "$fixture/a/original.txt" "$fixture/output-link"
+if "$binary" scan "$fixture" --output "$fixture/output-link"; then
+  printf 'Output symlink unexpectedly accepted\n' >&2
+  exit 1
+fi
+cmp "$fixture/expected.txt" "$fixture/a/original.txt"
+"$binary" scan "$fixture" --format json --output "$fixture/new-report.json"
+python3 -m json.tool "$fixture/new-report.json" > /dev/null
+
+for value in '-1' '+1' ' 1' ''; do
+  if "$binary" scan "$fixture" --min-size "$value"; then
+    printf 'Invalid minimum size unexpectedly accepted: %s\n' "$value" >&2
+    exit 1
+  fi
+done
+printf 'CLI output safety and argument validation: OK\n'

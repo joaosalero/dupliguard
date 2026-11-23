@@ -58,16 +58,24 @@ Report scan(const fs::path& root, std::uintmax_t min_size, bool include_hidden) 
     std::map<std::uintmax_t, std::vector<fs::path>> by_size;
     fs::recursive_directory_iterator it(report.root, fs::directory_options::skip_permission_denied, ec), end;
     if (ec) { ++report.errors; ec.clear(); }
+    auto advance = [&] {
+        it.increment(ec);
+        if (ec) { ++report.errors; ec.clear(); }
+    };
     while (it != end) {
         const auto entry = *it;
-        if (!include_hidden && hidden(entry.path())) { if (entry.is_directory(ec)) it.disable_recursion_pending(); ec.clear(); ++it; continue; }
-        bool regular = entry.is_regular_file(ec); if (ec) { ++report.errors; ec.clear(); ++it; continue; }
+        if (!include_hidden && hidden(entry.path())) {
+            if (entry.is_directory(ec)) it.disable_recursion_pending();
+            if (ec) ++report.errors;
+            ec.clear(); advance(); continue;
+        }
+        bool regular = entry.is_regular_file(ec); if (ec) { ++report.errors; ec.clear(); advance(); continue; }
         if (regular && !entry.is_symlink(ec)) {
             auto size = entry.file_size(ec);
             if (ec) { ++report.errors; ec.clear(); }
             else { ++report.files_scanned; report.bytes_scanned += size; if (size >= min_size) by_size[size].push_back(entry.path()); }
         }
-        ec.clear(); it.increment(ec); if (ec) { ++report.errors; ec.clear(); }
+        ec.clear(); advance();
     }
     for (auto& [size, paths] : by_size) if (paths.size() > 1) {
         std::map<std::string, std::vector<fs::path>> by_hash;
