@@ -1,5 +1,6 @@
 #include "scanner.hpp"
-#include <fstream>
+#include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <limits>
 
@@ -9,6 +10,9 @@ void usage(std::ostream& out) {
            "                  [--min-size BYTES] [--include-hidden]\n\nDupliGuard is read-only and never modifies scanned files.\n";
 }
 std::uintmax_t number(const std::string& text) {
+    if (text.empty() || !std::all_of(text.begin(), text.end(), [](char c) { return c >= '0' && c <= '9'; })) {
+        throw std::invalid_argument("invalid --min-size value");
+    }
     size_t used=0; unsigned long long value;
     try { value=std::stoull(text,&used); } catch (...) { throw std::invalid_argument("invalid --min-size value"); }
     if(used!=text.size() || value>std::numeric_limits<std::uintmax_t>::max()) {
@@ -29,7 +33,22 @@ int main(int argc, char** argv) {
         }
         if(format!="text"&&format!="json") throw std::invalid_argument("format must be text or json");
         auto report=dupliguard::scan(argv[2],min_size,include_hidden); auto rendered=format=="json"?dupliguard::to_json(report):dupliguard::to_text(report);
-        if(output.empty()) std::cout<<rendered; else { std::ofstream file(output,std::ios::binary); if(!file)throw std::runtime_error("cannot open output file"); file<<rendered; }
+        if (output.empty()) {
+            std::cout << rendered;
+            if (!std::cout) throw std::runtime_error("cannot write report to stdout");
+        } else {
+            // Exclusive creation prevents report output from truncating scanned files or symlink targets.
+            std::FILE* file = nullptr;
+#ifdef _MSC_VER
+            fopen_s(&file, output.c_str(), "wbx");
+#else
+            file = std::fopen(output.c_str(), "wbx");
+#endif
+            if (!file) throw std::runtime_error("cannot create output file (it must not already exist)");
+            const bool write_failed = std::fwrite(rendered.data(), 1, rendered.size(), file) != rendered.size();
+            const int close_result = std::fclose(file);
+            if (write_failed || close_result != 0) throw std::runtime_error("cannot write output file");
+        }
         return 0;
     } catch(const std::exception& e) { std::cerr<<"dupliguard: "<<e.what()<<'\n'; return 1; }
 }
