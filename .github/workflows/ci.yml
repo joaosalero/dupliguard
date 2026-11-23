@@ -26,6 +26,8 @@ jobs:
       - run: cmake --build build-cmake --parallel
       - run: ctest --test-dir build-cmake --output-on-failure
       - run: make test
+      - name: Verify synthetic scan and print the native JSON
+        run: python3 examples/scan_demo.py ./build/dupliguard
       - run: make sanitize
 
   java:

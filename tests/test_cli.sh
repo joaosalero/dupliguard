@@ -41,3 +41,11 @@ for value in '-1' '+1' ' 1' ''; do
   fi
 done
 printf 'CLI output safety and argument validation: OK\n'
+
+# A small report can fit in stdout's buffer even when the destination is full.
+if [[ -c /dev/full ]]; then
+  if "$binary" scan "$fixture" --format json >/dev/full; then
+    printf 'A failed stdout write unexpectedly returned success\n' >&2
+    exit 1
+  fi
+fi

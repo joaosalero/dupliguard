@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
         if(format!="text"&&format!="json") throw std::invalid_argument("format must be text or json");
         auto report=dupliguard::scan(argv[2],min_size,include_hidden); auto rendered=format=="json"?dupliguard::to_json(report):dupliguard::to_text(report);
         if (output.empty()) {
-            std::cout << rendered;
+            std::cout << rendered << std::flush;
             if (!std::cout) throw std::runtime_error("cannot write report to stdout");
         } else {
             // Exclusive creation prevents report output from truncating scanned files or symlink targets.
