@@ -7,8 +7,9 @@ contents. A portable C hashing core does the heavy work, a modern C++ CLI walks
 the filesystem and produces machine-readable reports, and a Java Swing desktop
 app makes the same engine accessible to non-technical users.
 
-> Safe by design: DupliGuard is read-only. It reports duplicates; it never
-> deletes, moves, or modifies scanned files. An explicit `--output` writes a new report and refuses existing paths.
+The scanner reads the chosen directory. An explicit `--output` writes a new report and refuses existing paths.
+
+[Engineering case study](docs/CASE_STUDY.md) · [Native JSON report](docs/evidence/scan-report.json)
 
 ## Why this project exists
 
@@ -22,8 +23,8 @@ small trust boundary. The native CLI uses the platform runtime; the optional des
 - Efficient two-stage scan: files are grouped by size before hashing
 - Recursive C++17 scanner with JSON and human-readable output
 - Java 17+ desktop interface with background scanning
-- Symlinks are skipped and filesystem errors are isolated per entry
-- Deterministic output, automated tests, sanitizer build, and CI
+- Symlink entries encountered below the selected root are skipped during traversal
+- Stable group and path ordering, automated tests, sanitizer build, and CI
 - Linux, macOS, and Windows-compatible source code
 
 ## Architecture
@@ -77,17 +78,12 @@ make run-gui
 
 On Windows, point the GUI to `dupliguard.exe` if it is not beside the app.
 
-## Illustrative output
+## Reproduce the scan
 
-The following values describe the output format, not a measured benchmark.
+Build the CLI using the instructions above. The Python 3 example creates four temporary files, runs the native scanner, verifies its JSON and checks that the input names and contents survived the scan.
 
-```text
-Scanned 8 files (24.1 MB) in 12 ms
-Found 2 duplicate groups, 3 redundant copies, 7.8 MB reclaimable
-
-SHA-256  9f86d081884c7d65...  (2 files, 4.0 MB each)
-  /home/user/Documents/report-copy.pdf
-  /home/user/Downloads/report.pdf
+```bash
+python3 examples/scan_demo.py ./build/dupliguard
 ```
 
 ## Performance and safety limits
