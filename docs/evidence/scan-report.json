@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "root": "/tmp/dupliguard-demo-4dx1o71i",
+  "summary": {"filesScanned": 4, "bytesScanned": 40, "duplicateGroups": 1, "redundantFiles": 1, "reclaimableBytes": 13, "errors": 0, "elapsedMs": 0},
+  "groups": [
+    {"sha256": "f953bbd204bb867e48a6ff774cffa3dcffd02c6580e8f1d00c37dbbaa743d6c8", "size": 13, "files": ["/tmp/dupliguard-demo-4dx1o71i/copy.txt", "/tmp/dupliguard-demo-4dx1o71i/original.txt"]}
+  ]
+}
